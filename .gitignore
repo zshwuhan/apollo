@@ -1,3 +1,4 @@
 *.swp
 result/*
 data_dst/*
+src/delicious/runtime/*

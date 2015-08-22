@@ -86,7 +86,6 @@ bool apollo_user_bookmark_tag::build_user_bookmark_tag_bigraph(){
     std::cerr << "test bookmark : " << this->bookmark_test_cnt_ << std::endl;
     std::cerr << "test tag: " << this->tag_test_cnt_ << std::endl;
 
-    /* serialization */
     
     this->data_serialization(this->user_seq_,this->seq_user_,this->user_bookmark_);
     this->data_serialization(this->bookmark_seq_,this->seq_bookmark_,this->bookmark_user_);
@@ -126,17 +125,18 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
     std::vector<std::vector<double> > u_b_(this->user_cluster_cnt_);
     std::vector<std::vector<double> > u_t_(this->user_cluster_cnt_);
 
-    std::vector<std::vector<double> > b_u_(this->bookmark_cluster_cnt_);
-    std::vector<std::vector<double> > b_t_(this->bookmark_cluster_cnt_);
+//  std::vector<std::vector<double> > b_u_(this->bookmark_cluster_cnt_);
+//  std::vector<std::vector<double> > b_t_(this->bookmark_cluster_cnt_);
 
-    std::vector<std::vector<double> > t_u_(this->tag_cluster_cnt_);
-    std::vector<std::vector<double> > t_b_(this->tag_cluster_cnt_);
+//  std::vector<std::vector<double> > t_u_(this->tag_cluster_cnt_);
+//  std::vector<std::vector<double> > t_b_(this->tag_cluster_cnt_);
 
     for(tidx = 0 ; tidx < this->user_cluster_cnt_ ; ++ tidx){
         u_b_[tidx].resize(this->bookmark_cnt_,0.0);
         u_t_[tidx].resize(this->tag_cnt_,0.0);
     }
 
+/*
     for(tidx = 0 ; tidx < this->bookmark_cluster_cnt_ ; ++ tidx){
         b_u_[tidx].resize(this->user_cnt_,0.0);
         b_t_[tidx].resize(this->tag_cnt_,0.0);
@@ -146,23 +146,19 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
         t_u_[tidx].resize(this->user_cnt_,0.0);
         t_b_[tidx].resize(this->bookmark_cnt_,0.0);
     }
-    
+*/   
 
-    // assign each node to a random cluster
     std::srand(std::time(NULL));
     
-    // serialization and random
-    // id->actual_id
     this->set_random_cluster(this->user_seq_,this->user_cluster_cnt_,t_clustering_result.u_,t_clustering_result.u_c_);
-    this->set_random_cluster(this->bookmark_seq_,this->bookmark_cluster_cnt_,t_clustering_result.b_,t_clustering_result.b_c_);
-    this->set_random_cluster(this->tag_seq_,this->tag_cluster_cnt_,t_clustering_result.t_,t_clustering_result.t_c_);
+//  this->set_random_cluster(this->bookmark_seq_,this->bookmark_cluster_cnt_,t_clustering_result.b_,t_clustering_result.b_c_);
+//  this->set_random_cluster(this->tag_seq_,this->tag_cluster_cnt_,t_clustering_result.t_,t_clustering_result.t_c_);
 
-    // improved kmeans in tripartite network
-    
     this->cluster_result_ = t_clustering_result;
     
     do{ 
-        std::cerr << "iter #" << ++ iter_time << std::endl;
+
+        ++ iter_time;
         
         this->calculate_cluster_centroid(t_clustering_result.u_c_,this->bookmark_cnt_,             \
                                          this->user_seq_,this->bookmark_seq_,this->user_bookmark_, \
@@ -172,19 +168,19 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
                                          this->user_seq_,this->tag_seq_,this->user_tag_,           \
                                          u_t_);
 
-        this->calculate_cluster_centroid(t_clustering_result.b_c_,this->user_cnt_,                 \
+//      this->calculate_cluster_centroid(t_clustering_result.b_c_,this->user_cnt_,                 \
                                          this->bookmark_seq_,this->user_seq_,this->bookmark_user_, \
                                          b_u_);
         
-        this->calculate_cluster_centroid(t_clustering_result.b_c_,this->tag_cnt_,                  \
+//      this->calculate_cluster_centroid(t_clustering_result.b_c_,this->tag_cnt_,                  \
                                          this->bookmark_seq_,this->tag_seq_,this->bookmark_tag_,   \
                                          b_t_);
         
-        this->calculate_cluster_centroid(t_clustering_result.t_c_,this->user_cnt_,                 \
+//      this->calculate_cluster_centroid(t_clustering_result.t_c_,this->user_cnt_,                 \
                                          this->tag_seq_,this->user_seq_,this->tag_user_,           \
                                          t_u_);
         
-        this->calculate_cluster_centroid(t_clustering_result.t_c_,this->bookmark_cnt_,             \
+//      this->calculate_cluster_centroid(t_clustering_result.t_c_,this->bookmark_cnt_,             \
                                          this->tag_seq_,this->bookmark_seq_,this->tag_bookmark_,   \
                                          t_b_);
         
@@ -193,33 +189,35 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
 
         this->user_update_new_cluster(this->user_bookmark_,this->user_tag_,u_b_,u_t_,t_clustering_result);
 
-        this->bookmark_update_new_cluster(this->bookmark_user_,this->bookmark_tag_,b_u_,b_t_,t_clustering_result);
+//      this->bookmark_update_new_cluster(this->bookmark_user_,this->bookmark_tag_,b_u_,b_t_,t_clustering_result);
 
-        this->tag_update_new_cluster(this->tag_user_,this->tag_bookmark_,t_u_,t_b_,t_clustering_result);
+//      this->tag_update_new_cluster(this->tag_user_,this->tag_bookmark_,t_u_,t_b_,t_clustering_result);
 
 
         this->cluster_result_ = t_clustering_result;
 
-        if(iter_time % 2 == 0){
+        if(iter_time % 1 == 0){
 
             std::stringstream s;
             std::string iter_time_str;
             s << iter_time;
             s >> iter_time_str;
 
-            this->output_the_result(\
+//          this->output_the_result(\
             RESULT_DIR + CLUSTER_DIR + RESULT_USER_FILE + "_" + AVE_DEGREE + "_" + ELEM_PER_CLUSTER + "_" + iter_time_str,\
             RESULT_DIR + CLUSTER_DIR + RESULT_BOOKMARK_FILE + "_" + AVE_DEGREE + "_" + ELEM_PER_CLUSTER + "_" + iter_time_str,\
             RESULT_DIR + CLUSTER_DIR + RESULT_TAG_FILE + "_" + AVE_DEGREE + "_" + ELEM_PER_CLUSTER + "_" + iter_time_str);
             
-            this->end_time = std::time(NULL);
-            
             this->apollo_recommender_ucf_b(\
             RESULT_DIR + RECOM_DIR + "ucf_" + AVE_DEGREE + "_" + ELEM_PER_CLUSTER + "_" + iter_time_str);
+            
+            this->end_time = std::time(NULL);
 
             std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
 
         }
+        
+        std::cerr << "iter #" << iter_time << std::endl;
 
     }while(-- t_iter_times);
     
@@ -238,40 +236,52 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
     
     std::ofstream out(file.c_str());
 
-    // every cluster
     for(std::vector<std::set<int> >::iterator iter_c = this->cluster_result_.u_c_.begin();\
                                               iter_c != this->cluster_result_.u_c_.end();\
                                               ++ iter_c){
         ++ cluster_idx;
         
-        out << cluster_idx << " " << iter_c->size() << std::endl;
 
         std::set<int> bookmark_set;
+        std::set<int> tag_set;
+
         std::map<int,int> tmp_user_seq;
         std::map<int,int> tmp_seq_user;
         std::map<int,int> tmp_bookmark_seq;
         std::map<int,int> tmp_seq_bookmark;
+        std::map<int,int> tmp_tag_seq;
+        std::map<int,int> tmp_seq_tag;
+
         int uidx = 0;
         int bidx = 0;
+        int tidx = 0;
         
-        // every user in the cluster
         for(std::set<int>::iterator iter_u = iter_c->begin() ; iter_u != iter_c->end() ; ++ iter_u){
-
+            
             int user = this->user_seq_.at(*iter_u);
             tmp_user_seq.insert(std::make_pair(uidx,*iter_u));
             tmp_seq_user.insert(std::make_pair(*iter_u,uidx));
             ++ uidx;
-            //every bookmark in user_bookmark_ graph
-            for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin();\
-                                        iter_b != this->user_bookmark_.at(user).end(); \
-                                        ++ iter_b){
-                //bookmark_set is older id
-                int tmp_b = this->seq_bookmark_.at(*iter_b);
-                if(bookmark_set.find(tmp_b) == bookmark_set.end()){
-                    bookmark_set.insert(tmp_b);
-                    tmp_bookmark_seq.insert(std::make_pair(bidx,tmp_b));
-                    tmp_seq_bookmark.insert(std::make_pair(tmp_b,bidx));
+
+            for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin(),\
+                                    iter_b_end = this->user_bookmark_.at(user).end();\
+                                        iter_b != iter_b_end; ++ iter_b){
+                if(bookmark_set.find(*iter_b) == bookmark_set.end()){
+                    bookmark_set.insert(*iter_b);
+                    tmp_bookmark_seq.insert(std::make_pair(bidx,*iter_b));
+                    tmp_seq_bookmark.insert(std::make_pair(*iter_b,bidx));
                     ++ bidx;
+                }
+            }
+
+            for(std::set<int>::iterator iter_t = this->user_tag_.at(user).begin(),\
+                                    iter_t_end = this->user_tag_.at(user).end();\
+                                        iter_t != iter_t_end ; ++ iter_t){
+                if(tag_set.find(*iter_t) == tag_set.end()){
+                    tag_set.insert(*iter_t);
+                    tmp_tag_seq.insert(std::make_pair(tidx,*iter_t));
+                    tmp_seq_tag.insert(std::make_pair(*iter_t,tidx));
+                    ++ tidx;
                 }
             }
         
@@ -279,9 +289,14 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
 
 
         std::vector<std::vector<apollo_recom_score> > score(uidx);
-        std::vector<std::vector<int> > mark(uidx);
+
+        std::vector<std::vector<int> > mark_b(uidx);
+        std::vector<std::vector<int> > mark_t(uidx);
+
         std::vector<std::vector<double> > similar(uidx);
-        std::vector<double> norm(uidx);
+
+        std::vector<double> norm_b(uidx);
+        std::vector<double> norm_t(uidx);
 
         std::vector<std::vector<double> > recall(uidx);
         std::vector<std::vector<double> > precision(uidx);
@@ -301,40 +316,70 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
                 score.at(iu).at(ib).id = ib;
                 score.at(iu).at(ib).value = 0.0;
             }
-            mark.at(iu).resize(bidx,0);
+            mark_b.at(iu).resize(bidx,0);
+            mark_t.at(iu).resize(tidx,0);
             similar.at(iu).resize(uidx,0.0);
-            norm.at(iu) = 0.0;
+            norm_b.at(iu) = 0.0;
+            norm_t.at(iu) = 0.0;
             recall.at(iu).resize(this->max_recom_list_length,0.0);
             precision.at(iu).resize(this->max_recom_list_length,0.0);
         }
 
 
         for(std::set<int>::iterator iter_u = iter_c->begin() ; iter_u != iter_c->end() ; ++ iter_u){
+
             int user = this->user_seq_.at(*iter_u);  
             int user_r_r = tmp_seq_user.at(*iter_u);
-            for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin();\
-                                        iter_b != this->user_bookmark_.at(user).end(); \
-                                        ++ iter_b){
-                int bookmark_r_r = tmp_seq_bookmark.at(this->seq_bookmark_.at(*iter_b));
-                mark.at(user_r_r).at(bookmark_r_r) = 1;
-                norm.at(user_r_r) += 1.0;
+
+            for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin(),\
+                                        iter_b_end = this->user_bookmark_.at(user).end();\
+                                        iter_b != iter_b_end ; ++ iter_b){
+                int bookmark_r_r = tmp_seq_bookmark.at(*iter_b);
+                mark_b.at(user_r_r).at(bookmark_r_r) = 1;
+                norm_b.at(user_r_r) += 1.0;
             }
+
+            for(std::set<int>::iterator iter_t = this->user_tag_.at(user).begin(),\
+                                        iter_t_end = this->user_tag_.at(user).end();\
+                                        iter_t != iter_t_end ; ++ iter_t){
+                int tag_r_r = tmp_seq_tag.at(*iter_t);
+                mark_t.at(user_r_r).at(tag_r_r) = 1;
+                norm_t.at(user_r_r) += 1.0;
+            }
+
         }
 
     
         for(size_t iu = 0 ; iu != uidx ; ++ iu){
             for(size_t iiu = iu ; iiu != uidx ; ++ iiu){
+
                 if(iu == iiu){
+
                     similar.at(iu).at(iiu) = 1.0;
+
                 }else{
+
+                    double similar_tmp = 0.0;
+
                     for(size_t ib = 0 ; ib != bidx ; ++ ib){
-                        if(mark.at(iu).at(ib) == 1 && mark.at(iiu).at(ib) == 1){
-                            similar.at(iu).at(iiu) += 1.0;
-                            similar.at(iiu).at(iu) += 1.0;
+                        if(mark_b.at(iu).at(ib) == 1 && mark_b.at(iiu).at(ib) == 1){
+                            similar_tmp += 1.0;
                         }
                     }
-                    similar.at(iu).at(iiu) /= (std::sqrt(norm.at(iu)) * std::sqrt(norm.at(iiu)));
-                    similar.at(iiu).at(iu) = similar.at(iu).at(iiu);
+                    
+                    similar.at(iu).at(iiu) = similar_tmp / (std::sqrt(norm_b.at(iu)) * std::sqrt(norm_b.at(iiu)));
+
+                    similar_tmp = 0.0;
+
+                    for(size_t it = 0 ; it != tidx ; ++ it){
+                        if(mark_t.at(iu).at(it) == 1 && mark_t.at(iiu).at(it) == 1){
+                            similar_tmp += 1.0;
+                        }
+                    }
+
+                    similar.at(iu).at(iiu) = 0.5 * similar.at(iu).at(iiu) + \
+                                             0.5 * similar_tmp / (std::sqrt(norm_t.at(iu)) * std::sqrt(norm_t.at(iiu)));
+
                 }
             }
         }
@@ -342,19 +387,18 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
 
         for(size_t iu = 0 ; iu != uidx ; ++ iu){
 
-            //id in user_bookmark_ graph
             int user_r_r = this->user_seq_.at(tmp_user_seq.at(iu));
             std::set<int> tset = this->user_bookmark_test_.at(user_r_r);
             
             for(size_t ib = 0; ib != bidx ; ++ ib){
                 for(size_t iiu = 0 ; iiu != uidx ; ++ iiu){
-                    if(mark.at(iu).at(ib) == 1){
+                    if(mark_b.at(iu).at(ib) == 1){
                         score.at(iu).at(ib).value = -1.0;
                     }else{
                         if(iiu == iu){
                             continue;
                         }else{
-                            if(mark.at(iiu).at(ib) == 1){
+                            if(mark_b.at(iiu).at(ib) == 1){
                                 score.at(iu).at(ib).value += 1 * similar.at(iu).at(iiu);
                             }
                         }
@@ -366,7 +410,7 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
             
             for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
                 if(t0 < bidx){
-                    int bookmark_r_r = this->bookmark_seq_.at(tmp_bookmark_seq.at(score.at(iu).at(t0).id));
+                    int bookmark_r_r = tmp_bookmark_seq.at(score.at(iu).at(t0).id);
                     if(t0 == 0){
                         if(tset.find(bookmark_r_r) != tset.end()){
                             recall.at(iu).at(t0) = 1.0;
@@ -399,12 +443,13 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
             for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
                 
                 recall.at(iu).at(t0) /= tset.size();
-                // bidx will never less than 1
+
                 if(t0 < bidx){
                     precision.at(iu).at(t0) /= (t0 + 1);
                 }else{
                     precision.at(iu).at(t0) = precision.at(iu).at(t0-1);
                 }
+
                 ave_recall.at(t0) += recall.at(iu).at(t0);
                 ave_precision.at(t0) += precision.at(iu).at(t0);
 
@@ -413,19 +458,15 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
         }
         
         for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
-
             this->recall_.at(t0) += ave_recall.at(t0);
             this->precision_.at(t0) += ave_precision.at(t0);
-
-            ave_recall.at(t0) /= static_cast<double>(uidx);
-            ave_precision.at(t0) /= static_cast<double>(uidx);
-            
-            if(std::fabs(ave_recall.at(t0)) < 1e-8 && std::fabs(ave_precision.at(t0) < 1e-8)){
-                f_score.at(t0) = 0.0;
-            }else{
-                f_score.at(t0) = (2.0 * ave_precision.at(t0) * ave_recall.at(t0)) / (ave_precision.at(t0) + ave_recall.at(t0));
-            }
-
+            // ave_recall.at(t0) /= static_cast<double>(uidx);
+            // ave_precision.at(t0) /= static_cast<double>(uidx);
+            // if(std::fabs(ave_recall.at(t0)) < 1e-8 && std::fabs(ave_precision.at(t0) < 1e-8)){
+            //     f_score.at(t0) = 0.0;
+            // }else{
+            //     f_score.at(t0) = (2.0 * ave_precision.at(t0) * ave_recall.at(t0)) / (ave_precision.at(t0) + ave_recall.at(t0));
+            // }
         }
 
     

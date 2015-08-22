@@ -14,10 +14,10 @@ const std::string BOOKMARK_FILE("bookmarks.dat");
 const std::string USER_BOOKMARK_TAG_TRAIN_FILE("user_bookmark_tag_train.dat");
 const std::string USER_BOOKMARK_TAG_TEST_FILE("user_bookmark_tag_test.dat");
 
-const int USER_CLUSTER_CNT = 20;
-const int BOOKMARK_CLUSTER_CNT = 79;
-const int TAG_CLUSTER_CNT = 24;
-const int ITER_TIME = 2;
+const int USER_CLUSTER_CNT = 32;
+const int BOOKMARK_CLUSTER_CNT = 406;
+const int TAG_CLUSTER_CNT = 105;
+const int ITER_TIME = 10;
 const int RECOM_LIST = 20;
 
 int main(int argc,char *argv[]){

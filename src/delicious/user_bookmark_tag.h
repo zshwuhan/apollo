@@ -28,7 +28,7 @@ const std::string RESULT_USER_FILE("result_user_cluster");
 const std::string RESULT_TAG_FILE("result_tag_cluster");
 const std::string RESULT_BOOKMARK_FILE("result_bookmark_cluster");
 const std::string ELEM_PER_CLUSTER("50");
-const std::string AVE_DEGREE("10");
+const std::string AVE_DEGREE("5");
 
 class apollo_clustering_result{
     
