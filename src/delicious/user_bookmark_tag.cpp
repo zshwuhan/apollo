@@ -86,6 +86,9 @@ bool apollo_user_bookmark_tag::build_user_bookmark_tag_bigraph(){
     std::cerr << "test bookmark : " << this->bookmark_test_cnt_ << std::endl;
     std::cerr << "test tag: " << this->tag_test_cnt_ << std::endl;
 
+
+    std::cerr << "===================================" << std::endl;
+
     
     this->data_serialization(this->user_seq_,this->seq_user_,this->user_bookmark_);
     this->data_serialization(this->bookmark_seq_,this->seq_bookmark_,this->bookmark_user_);
@@ -230,9 +233,9 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
     
     size_t cluster_idx = 0;
     
-    this->recall_.resize(this->max_recom_list_length);
-    this->precision_.resize(this->max_recom_list_length);
-    this->fscore_.resize(this->max_recom_list_length);
+    this->recall_.resize(this->max_recom_list_length,0.0);
+    this->precision_.resize(this->max_recom_list_length,0.0);
+    this->fscore_.resize(this->max_recom_list_length,0.0);
     
     std::ofstream out(file.c_str());
 
@@ -259,8 +262,8 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
         for(std::set<int>::iterator iter_u = iter_c->begin() ; iter_u != iter_c->end() ; ++ iter_u){
             
             int user = this->user_seq_.at(*iter_u);
-            tmp_user_seq.insert(std::make_pair(uidx,*iter_u));
-            tmp_seq_user.insert(std::make_pair(*iter_u,uidx));
+            tmp_user_seq.insert(std::make_pair(uidx,user));
+            tmp_seq_user.insert(std::make_pair(user,uidx));
             ++ uidx;
 
             for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin(),\
@@ -329,7 +332,7 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
         for(std::set<int>::iterator iter_u = iter_c->begin() ; iter_u != iter_c->end() ; ++ iter_u){
 
             int user = this->user_seq_.at(*iter_u);  
-            int user_r_r = tmp_seq_user.at(*iter_u);
+            int user_r_r = tmp_seq_user.at(user);
 
             for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin(),\
                                         iter_b_end = this->user_bookmark_.at(user).end();\
@@ -380,6 +383,8 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
                     similar.at(iu).at(iiu) = 0.5 * similar.at(iu).at(iiu) + \
                                              0.5 * similar_tmp / (std::sqrt(norm_t.at(iu)) * std::sqrt(norm_t.at(iiu)));
 
+                    similar.at(iiu).at(iu) = similar.at(iu).at(iiu);
+
                 }
             }
         }
@@ -387,7 +392,7 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
 
         for(size_t iu = 0 ; iu != uidx ; ++ iu){
 
-            int user_r_r = this->user_seq_.at(tmp_user_seq.at(iu));
+            int user_r_r = tmp_user_seq.at(iu);
             std::set<int> tset = this->user_bookmark_test_.at(user_r_r);
             
             for(size_t ib = 0; ib != bidx ; ++ ib){
@@ -589,9 +594,7 @@ void apollo_user_bookmark_tag::update_new_cluster(const std::map<int,std::set<in
             tmulval = 0.0;
             tsqrtval = std::sqrt(x.at(xid).size());
             
-            std::set<int>::iterator iterxend = x.at(xid).end();
-
-            for(std::set<int>::iterator iterx = x.at(xid).begin() ;\
+            for(std::set<int>::iterator iterx = x.at(xid).begin() , iterxend = x.at(xid).end();\
                                         iterx != iterxend         ;\
                                         ++ iterx){
                 
@@ -606,9 +609,7 @@ void apollo_user_bookmark_tag::update_new_cluster(const std::map<int,std::set<in
             tmulval = 0.0;
             tsqrtval = std::sqrt(y.at(xid).size());
 
-            std::set<int>::iterator iteryend = y.at(xid).end();
-
-            for(std::set<int>::iterator itery = y.at(xid).begin() ; \
+            for(std::set<int>::iterator itery = y.at(xid).begin() , iteryend = y.at(xid).end() ; \
                                         itery != iteryend         ; \
                                         ++ itery){
             
