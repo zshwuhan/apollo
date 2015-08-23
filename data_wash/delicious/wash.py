@@ -148,7 +148,7 @@ class data_wash:
         self.b_file_ = bookmark_file
         self.u_b_t_list_ = []
         self.readme_file_ = readme_file
-        self.degree_filter_param_ = 5
+        self.degree_filter_param_ = 10
 
         self.train_user_set_ = set()
         self.train_bookmark_set_ = set()

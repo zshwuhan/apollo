@@ -449,7 +449,7 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
             int tag = *iter_t;
             int tag_r = this->seq_tag_.at(tag);
             mark_t.at(user_r).at(tag_r) = 1;
-            norm_b.at(user_r) += 1.0;
+            norm_t.at(user_r) += 1.0;
         }
     }
 
