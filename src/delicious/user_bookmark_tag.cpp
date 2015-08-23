@@ -218,6 +218,9 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
 
             std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
 
+            this->start_time = std::time(NULL);
+
+
         }
         
         std::cerr << "iter #" << iter_time << std::endl;
