@@ -229,6 +229,370 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
 
 }
 
+
+void apollo_user_bookmark_tag::apollo_bipartite_ucf_b(const std::string &file){
+
+    this->start_time = std::time(NULL);
+
+    this->recall_.resize(this->max_recom_list_length,0.0);
+    this->precision_.resize(this->max_recom_list_length,0.0);
+    this->fscore_.resize(this->max_recom_list_length,0.0);
+
+    std::ofstream out(file.c_str());
+
+    std::vector<std::vector<int> > mark_b(this->user_cnt_);
+    std::vector<double> norm_b(this->user_cnt_,0.0);
+    std::vector<std::vector<double> > similar(this->user_cnt_);
+    std::vector<std::vector<apollo_recom_score> > score(this->user_cnt_);
+
+    for(size_t iu = 0 ; iu < this->user_cnt_ ; ++ iu){
+
+        mark_b.at(iu).resize(this->bookmark_cnt_,0);
+        similar.at(iu).resize(this->user_cnt_,0.0);
+        score.at(iu).resize(this->bookmark_cnt_);
+        for(size_t ib = 0 ; ib < this->bookmark_cnt_ ; ++ ib){
+            score.at(iu).at(ib).id = ib;
+            score.at(iu).at(ib).value = 0.0;
+        }
+
+    }
+
+    for(std::map<int,std::set<int> >::iterator iter_u = this->user_bookmark_.begin() ; \
+                                               iter_u != this->user_bookmark_.end() ;
+                                               ++ iter_u){
+        int user = iter_u ->first;
+        int user_r = this->seq_user_.at(iter_u->first);
+        for(std::set<int>::iterator iter_b = iter_u->second.begin() , iter_b_end = iter_u->second.end() ; \
+                                    iter_b != iter_b_end ; ++ iter_b){
+            int bookmark = *iter_b;
+            int bookmark_r = this->seq_bookmark_.at(bookmark);
+            mark_b.at(user_r).at(bookmark_r) = 1;
+            norm_b.at(user_r) += 1.0;
+        }
+    }
+
+    for(size_t iu = 0 ; iu < this->user_cnt_ ; ++ iu){
+        for(size_t iiu = iu ; iiu < this->user_cnt_ ; ++iiu){
+            if(iu == iiu){
+                similar.at(iu).at(iiu) = 1.0;
+            }else{
+                int user = this->user_seq_.at(iu);
+                for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin() , \
+                                            iter_b_end = this->user_bookmark_.at(user).end() ; \
+                                            iter_b != iter_b_end ; ++ iter_b){
+                    int bookmark_r = this->seq_bookmark_.at(*iter_b);
+                    if(mark_b.at(iiu).at(bookmark_r) == 1){
+                        similar.at(iu).at(iiu) += 1.0;
+                    }
+                }
+                similar.at(iu).at(iiu) /= (std::sqrt(norm_b.at(iu)) * std::sqrt(norm_b.at(iiu)));
+                similar.at(iiu).at(iu) = similar.at(iu).at(iiu);
+            }
+        }
+    }
+
+
+    for(size_t iu = 0 ; iu < this->user_cnt_ ; ++ iu){
+    
+        int user = this->user_seq_.at(iu);
+
+        for(size_t ib = 0 ; ib < this->bookmark_cnt_ ; ++ ib){
+            if(mark_b.at(iu).at(ib) == 1){
+                score.at(iu).at(ib).value = -1.0;
+            }else{
+                for(size_t iiu = 0 ; iiu < this->user_cnt_ ; ++ iiu){
+                    if(iu == iiu){
+                        continue;
+                    }else{
+                        if(mark_b.at(iiu).at(ib) == 1){
+                            score.at(iu).at(ib).value += 1 * similar.at(iu).at(iiu);
+                        }
+                    }
+                }
+            }
+        }
+
+        std::sort(score.at(iu).begin(),score.at(iu).end());
+        std::set<int> tset = this->user_bookmark_test_.at(user);
+        std::vector<double> recall(this->max_recom_list_length,0.0);
+        std::vector<double> precision(this->max_recom_list_length,0.0);
+        
+        for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
+            
+            if(t0 < this->bookmark_cnt_){
+                int bookmark = this->bookmark_seq_.at(score.at(iu).at(t0).id);
+                if(t0 == 0){
+                    if(tset.find(bookmark) != tset.end()){
+                        recall.at(t0) = 1.0;
+                        precision.at(t0) = 1.0;
+                    }else{
+                        recall.at(t0) = 0.0;
+                        precision.at(t0) = 0.0;
+                    }
+                }else{
+                    if(tset.find(bookmark) != tset.end()){
+                        recall.at(t0) = recall.at(t0 - 1) + 1.0;
+                        precision.at(t0) = precision.at(t0 - 1) + 1.0;
+                    }else{
+                        recall.at(t0) = recall.at(t0 - 1);
+                        precision.at(t0) = precision.at(t0 - 1);
+                    }
+                }
+            }else{
+                if(t0 == 0){
+                    recall.at(t0) = 0.0;
+                    precision.at(t0) = 0.0;
+                }else{
+                    recall.at(t0) = recall.at(t0 - 1);
+                    precision.at(t0) = precision.at(t0 - 1);
+                }
+            }  
+        
+        }
+        
+
+        for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
+            
+            recall.at(t0) /= tset.size();
+
+            if(t0 < this->bookmark_cnt_){
+                precision.at(t0) /= (t0 + 1);
+            }else{
+                precision.at(t0) = precision.at(t0 - 1);
+            }
+
+            this->recall_.at(t0) += recall.at(t0);
+            this->precision_.at(t0) += precision.at(t0);
+
+        }
+
+    }
+    
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
+        this->recall_.at(t0) /= static_cast<double>(this->user_cnt_);
+        this->precision_.at(t0) /= static_cast<double>(this->user_cnt_);
+        if(std::fabs(this->recall_.at(t0)) < 1e-8 && std::fabs(this->precision_.at(t0)) < 1e-8){
+            this->fscore_.at(t0) = 0.0;
+        }else{
+            this->fscore_.at(t0) = (2.0 * this->recall_.at(t0) * this->precision_.at(t0)) / \
+                                   (this->recall_.at(t0) + this->precision_.at(t0));
+        }
+    }
+
+    out << std::endl << std::endl << std::endl;
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
+        out << this->recall_.at(t0) << std::endl;
+    out << std::endl << std::endl << std::endl;
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
+        out << this->precision_.at(t0) << std::endl;
+    out << std::endl << std::endl << std::endl;
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
+        out << this->fscore_.at(t0) << std::endl;
+
+    this->end_time = std::time(NULL);
+    std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
+
+    return ;
+
+}
+
+
+void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
+
+
+    this->start_time = std::time(NULL);
+
+    this->recall_.resize(this->max_recom_list_length,0.0);
+    this->precision_.resize(this->max_recom_list_length,0.0);
+    this->fscore_.resize(this->max_recom_list_length,0.0);
+
+    std::ofstream out(file.c_str());
+
+    std::vector<std::vector<int> > mark_b(this->user_cnt_);
+    std::vector<std::vector<int> > mark_t(this->user_cnt_);
+    std::vector<double> norm_b(this->user_cnt_,0.0);
+    std::vector<double> norm_t(this->user_cnt_,0.0);
+    std::vector<std::vector<double> > similar(this->user_cnt_);
+    std::vector<std::vector<apollo_recom_score> > score(this->user_cnt_);
+
+
+    for(size_t iu = 0 ; iu != this->user_cnt_ ; ++ iu){
+        mark_b.at(iu).resize(this->bookmark_cnt_,0);
+        mark_t.at(iu).resize(this->tag_cnt_,0);
+        similar.at(iu).resize(this->user_cnt_,0.0);
+        score.at(iu).resize(this->bookmark_cnt_);
+        for(size_t ib = 0 ; ib != this->bookmark_cnt_ ; ++ ib){
+            score.at(iu).at(ib).id = ib;
+            score.at(iu).at(ib).value = 0.0;
+        }
+    }
+    
+    for(std::map<int,std::set<int> >::iterator iter_u = this->user_bookmark_.begin() ; \
+                                               iter_u != this->user_bookmark_.end() ;  \
+                                               ++ iter_u){
+        int user = iter_u->first;
+        int user_r = this->seq_user_.at(user);
+        for(std::set<int>::iterator iter_b = iter_u->second.begin() ; iter_b != iter_u->second.end() ; ++ iter_b){
+            int bookmark = *iter_b;
+            int bookmark_r = this->seq_bookmark_.at(bookmark);
+            mark_b.at(user_r).at(bookmark_r) = 1;
+            norm_b.at(user_r) += 1.0;
+        }
+    }
+
+    for(std::map<int,std::set<int> >::iterator iter_u = this->user_tag_.begin() ; \
+                                               iter_u != this->user_tag_.end() ; \
+                                               ++ iter_u){
+        int user = iter_u->first;
+        int user_r = this->seq_user_.at(user);
+        for(std::set<int>::iterator iter_t = iter_u->second.begin() ; iter_t != iter_u->second.end() ; ++ iter_t){
+            int tag = *iter_t;
+            int tag_r = this->seq_tag_.at(tag);
+            mark_t.at(user_r).at(tag_r) = 1;
+            norm_b.at(user_r) += 1.0;
+        }
+    }
+
+    for(size_t iu = 0 ; iu < this->user_cnt_ ; ++ iu){
+        for(size_t iiu = iu ; iiu < this->user_cnt_ ; ++ iiu){
+            if(iu == iiu){
+                similar.at(iu).at(iiu) = 1.0;
+            }else{
+                double similar_tmp = 0.0;
+                int user = this->user_seq_.at(iu);
+                for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin() , \
+                                            iter_b_end = this->user_bookmark_.at(user).end() ; \
+                                            iter_b != iter_b_end ; \
+                                            ++ iter_b){
+                    int bookmark = *iter_b;
+                    int bookmark_r = this->seq_bookmark_.at(bookmark);
+                    if(mark_b.at(iiu).at(bookmark_r) == 1){
+                        similar_tmp += 1.0;
+                    }
+                }
+                similar.at(iu).at(iiu) = similar_tmp / (std::sqrt(norm_b.at(iu)) * std::sqrt(norm_b.at(iiu)));
+                similar_tmp = 0.0;
+                for(std::set<int>::iterator iter_t = this->user_tag_.at(user).begin() , \
+                                            iter_t_end = this->user_tag_.at(user).end() ; \
+                                            iter_t != iter_t_end ; \
+                                            ++ iter_t){
+                    int tag = *iter_t;
+                    int tag_r = this->seq_tag_.at(tag);
+                    if(mark_t.at(iiu).at(tag_r) == 1){
+                        similar_tmp += 1.0;
+                    } 
+                }
+                similar.at(iu).at(iiu) = 0.5 * similar.at(iu).at(iiu) + \
+                                         0.5 * (similar_tmp / (std::sqrt(norm_t.at(iu)) * std::sqrt(norm_t.at(iiu))));
+                similar.at(iiu).at(iu) = similar.at(iu).at(iiu);
+            }
+        }
+    }
+
+    for(size_t iu = 0 ; iu != this->user_cnt_ ; ++ iu){
+
+        int user = this->user_seq_.at(iu);
+        for(size_t ib = 0 ; ib != this->bookmark_cnt_ ; ++ ib){
+            if(mark_b.at(iu).at(ib) == 1){
+                score.at(iu).at(ib).value = -1.0;
+            }else{
+                for(size_t iiu = 0 ; iiu != this->user_cnt_ ; ++ iiu){
+                    if(iu == iiu){
+                        continue;
+                    }
+                    if(mark_b.at(iiu).at(ib) == 1){
+                        score.at(iu).at(ib).value += 1 * similar.at(iu).at(iiu);
+                    }
+                }
+            }
+        }
+
+        std::sort(score.at(iu).begin(),score.at(iu).end());
+        std::set<int> tset = this->user_bookmark_test_.at(user);
+    
+        std::vector<double> recall(this->max_recom_list_length,0.0);
+        std::vector<double> precision(this->max_recom_list_length,0.0);
+
+        for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
+
+            if(t0 < this->bookmark_cnt_){
+                int bookmark = this->bookmark_seq_.at(score.at(iu).at(t0).id);
+                if(t0 == 0){
+                    if(tset.find(bookmark) != tset.end()){
+                        recall.at(t0) = 1.0;
+                        precision.at(t0) = 1.0;
+                    }else{
+                        recall.at(t0) = 0.0;
+                        precision.at(t0) = 0.0;
+                    }
+                }else{
+                    if(tset.find(bookmark) != tset.end()){
+                        recall.at(t0) = recall.at(t0 - 1) + 1.0;
+                        precision.at(t0) = precision.at(t0 - 1) + 1.0;
+                    }else{
+                        recall.at(t0) = recall.at(t0 - 1);
+                        precision.at(t0) = precision.at(t0 - 1);
+                    }
+                }
+            }else{
+                if(t0 == 0){
+                    recall.at(t0) = 0.0;
+                    precision.at(t0) = 0.0;
+                }else{
+                    recall.at(t0) = recall.at(t0 - 1);
+                    precision.at(t0) = precision.at(t0 - 1);
+                }
+            }  
+
+        }
+
+        for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
+            
+            recall.at(t0) /= tset.size();
+
+            if(t0 < this->bookmark_cnt_){
+                precision.at(t0) /= (t0 + 1);
+            }else{
+                precision.at(t0) = precision.at(t0 - 1);
+            }
+
+            this->recall_.at(t0) += recall.at(t0);
+            this->precision_.at(t0) += precision.at(t0);
+
+        }
+
+
+    }
+
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
+        this->recall_.at(t0) /= static_cast<double>(this->user_cnt_);
+        this->precision_.at(t0) /= static_cast<double>(this->user_cnt_);
+        if(std::fabs(this->recall_.at(t0)) < 1e-8 && std::fabs(this->precision_.at(t0)) < 1e-8){
+            this->fscore_.at(t0) = 0.0;
+        }else{
+            this->fscore_.at(t0) = (2.0 * this->recall_.at(t0) * this->precision_.at(t0)) / \
+                                   (this->recall_.at(t0) + this->precision_.at(t0));
+        }
+    }
+
+    out << std::endl << std::endl << std::endl;
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
+        out << this->recall_.at(t0) << std::endl;
+    out << std::endl << std::endl << std::endl;
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
+        out << this->precision_.at(t0) << std::endl;
+    out << std::endl << std::endl << std::endl;
+    for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
+        out << this->fscore_.at(t0) << std::endl;
+
+    this->end_time = std::time(NULL);
+    std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
+
+    return ;
+    
+}
+
+
 void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file){
     
     size_t cluster_idx = 0;
@@ -298,20 +662,12 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
 
         std::vector<std::vector<double> > similar(uidx);
 
-        std::vector<double> norm_b(uidx);
-        std::vector<double> norm_t(uidx);
+        std::vector<double> norm_b(uidx,0.0);
+        std::vector<double> norm_t(uidx,0.0);
 
         std::vector<std::vector<double> > recall(uidx);
         std::vector<std::vector<double> > precision(uidx);
         
-        std::vector<double> f_score;
-        std::vector<double> ave_recall;
-        std::vector<double> ave_precision;
-
-
-        f_score.resize(this->max_recom_list_length,0.0);
-        ave_recall.resize(this->max_recom_list_length,0.0);
-        ave_precision.resize(this->max_recom_list_length,0.0);
 
         for(size_t iu = 0 ; iu != uidx ; ++ iu){
             score.at(iu).resize(bidx);
@@ -322,8 +678,6 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
             mark_b.at(iu).resize(bidx,0);
             mark_t.at(iu).resize(tidx,0);
             similar.at(iu).resize(uidx,0.0);
-            norm_b.at(iu) = 0.0;
-            norm_t.at(iu) = 0.0;
             recall.at(iu).resize(this->max_recom_list_length,0.0);
             precision.at(iu).resize(this->max_recom_list_length,0.0);
         }
@@ -455,33 +809,20 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
                     precision.at(iu).at(t0) = precision.at(iu).at(t0-1);
                 }
 
-                ave_recall.at(t0) += recall.at(iu).at(t0);
-                ave_precision.at(t0) += precision.at(iu).at(t0);
+                this->recall_.at(t0) += recall.at(iu).at(t0);
+                this->precision_.at(t0) += precision.at(iu).at(t0);
 
             }
 
         }
         
-        for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
-            this->recall_.at(t0) += ave_recall.at(t0);
-            this->precision_.at(t0) += ave_precision.at(t0);
-            // ave_recall.at(t0) /= static_cast<double>(uidx);
-            // ave_precision.at(t0) /= static_cast<double>(uidx);
-            // if(std::fabs(ave_recall.at(t0)) < 1e-8 && std::fabs(ave_precision.at(t0) < 1e-8)){
-            //     f_score.at(t0) = 0.0;
-            // }else{
-            //     f_score.at(t0) = (2.0 * ave_precision.at(t0) * ave_recall.at(t0)) / (ave_precision.at(t0) + ave_recall.at(t0));
-            // }
-        }
-
     
     }
 
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0){
-
         this->recall_.at(t0) /= static_cast<double>(this->user_cnt_);
         this->precision_.at(t0) /= static_cast<double>(this->user_cnt_);
-        if(fabs(this->recall_.at(t0)) < 1e-8 && fabs(this->precision_.at(t0)) < 1e-8){
+        if(std::fabs(this->recall_.at(t0)) < 1e-8 && std::fabs(this->precision_.at(t0)) < 1e-8){
             this->fscore_.at(t0) = 0;
         }else{
             this->fscore_.at(t0) = (2.0 * this->recall_.at(t0) * this->precision_.at(t0)) / \

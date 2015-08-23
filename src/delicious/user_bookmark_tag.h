@@ -27,7 +27,7 @@ const std::string RECOM_DIR("recom/");
 const std::string RESULT_USER_FILE("result_user_cluster");
 const std::string RESULT_TAG_FILE("result_tag_cluster");
 const std::string RESULT_BOOKMARK_FILE("result_bookmark_cluster");
-const std::string ELEM_PER_CLUSTER("50");
+const std::string ELEM_PER_CLUSTER("60");
 const std::string AVE_DEGREE("5");
 
 class apollo_clustering_result{
@@ -75,10 +75,13 @@ class apollo_user_bookmark_tag{
                                const std::string &,\
                                const std::string &);
         //void test_print();
+        void apollo_tripartite_ucf_b(const std::string &);
+        void apollo_bipartite_ucf_b(const std::string &);
 
     private:
 
         void apollo_recommender_ucf_b(const std::string &);
+
 
         void output_the_runtime_status();
 
