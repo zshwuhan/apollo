@@ -18,6 +18,10 @@
 #include <cmath>
 #include <algorithm>
 
+#include <sys/times.h>
+#include <sys/time.h>
+#include <unistd.h>
+
 #include "tag.h"
 #include "bookmark.h"
 
@@ -27,7 +31,7 @@ const std::string RECOM_DIR("recom/");
 const std::string RESULT_USER_FILE("result_user_cluster");
 const std::string RESULT_TAG_FILE("result_tag_cluster");
 const std::string RESULT_BOOKMARK_FILE("result_bookmark_cluster");
-const std::string ELEM_PER_CLUSTER("50");
+const std::string ELEM_PER_CLUSTER("90");
 const std::string AVE_DEGREE("10");
 
 class apollo_clustering_result{
@@ -191,7 +195,13 @@ class apollo_user_bookmark_tag{
         std::map<int,int> seq_user_;        // id to dimension
         std::map<int,int> seq_bookmark_;
         std::map<int,int> seq_tag_;
-
+        
+        clock_t start_;
+        clock_t end_;
+        struct tms start_time_;
+        struct tms end_time_;
+        long clc;
+        
 
         int user_cluster_cnt_;
         int bookmark_cluster_cnt_;
@@ -207,8 +217,7 @@ class apollo_user_bookmark_tag{
         
         apollo_clustering_result cluster_result_; 
 
-        std::time_t start_time;
-        std::time_t end_time;
+
         
         int iter_time_;
         

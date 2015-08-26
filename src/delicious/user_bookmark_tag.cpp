@@ -30,6 +30,8 @@ bool apollo_user_bookmark_tag::build_user_bookmark_tag_bigraph(){
     int bookmark_id;
     int tag_id;
 
+    this->clc = sysconf(_SC_CLK_TCK);
+
     std::ifstream tf(this->user_bookmark_tag_file_.c_str());
 
     if(!tf){
@@ -123,7 +125,7 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
     int tidx;
     int iter_time = 0;
     
-    this->start_time = std::time(NULL);
+    this->start_ = ::times(&this->start_time_);
     
     std::vector<std::vector<double> > u_b_(this->user_cluster_cnt_);
     std::vector<std::vector<double> > u_t_(this->user_cluster_cnt_);
@@ -162,6 +164,7 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
     do{ 
 
         ++ iter_time;
+        std::cerr << "iter #" << iter_time << std::endl;
         
         this->calculate_cluster_centroid(t_clustering_result.u_c_,this->bookmark_cnt_,             \
                                          this->user_seq_,this->bookmark_seq_,this->user_bookmark_, \
@@ -199,7 +202,7 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
 
         this->cluster_result_ = t_clustering_result;
 
-        if(iter_time % 1 == 0){
+        if(iter_time == this->iter_time_){
 
             std::stringstream s;
             std::string iter_time_str;
@@ -213,17 +216,12 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
             
             this->apollo_recommender_ucf_b(\
             RESULT_DIR + RECOM_DIR + "ucf_" + AVE_DEGREE + "_" + ELEM_PER_CLUSTER + "_" + iter_time_str);
+
+
             
-            this->end_time = std::time(NULL);
-
-            std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
-
-            this->start_time = std::time(NULL);
-
 
         }
         
-        std::cerr << "iter #" << iter_time << std::endl;
 
     }while(-- t_iter_times);
     
@@ -235,7 +233,7 @@ void apollo_user_bookmark_tag::apollo_clustering_(){
 
 void apollo_user_bookmark_tag::apollo_bipartite_ucf_b(const std::string &file){
 
-    this->start_time = std::time(NULL);
+    this->start_ = ::times(&this->start_time_);
 
     this->recall_.resize(this->max_recom_list_length,0.0);
     this->precision_.resize(this->max_recom_list_length,0.0);
@@ -382,6 +380,12 @@ void apollo_user_bookmark_tag::apollo_bipartite_ucf_b(const std::string &file){
         }
     }
 
+    this->end_ = ::times(&this->end_time_);
+
+    std::cerr << "clock time : " << static_cast<double>(this->end_ - this->start_)/this->clc << std::endl;
+    std::cerr << "user cpu time : " << static_cast<double>(this->end_time_.tms_utime - this->start_time_.tms_utime) / this->clc << std::endl;
+    std::cerr << "system cpu time : " << static_cast<double>(this->end_time_.tms_stime - this->start_time_.tms_stime) / this->clc << std::endl;
+
     out << std::endl << std::endl << std::endl;
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
         out << this->recall_.at(t0) << std::endl;
@@ -392,8 +396,6 @@ void apollo_user_bookmark_tag::apollo_bipartite_ucf_b(const std::string &file){
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
         out << this->fscore_.at(t0) << std::endl;
 
-    this->end_time = std::time(NULL);
-    std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
 
     return ;
 
@@ -401,9 +403,8 @@ void apollo_user_bookmark_tag::apollo_bipartite_ucf_b(const std::string &file){
 
 
 void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
-
-
-    this->start_time = std::time(NULL);
+    
+    this->start_ = ::times(&this->start_time_);
 
     this->recall_.resize(this->max_recom_list_length,0.0);
     this->precision_.resize(this->max_recom_list_length,0.0);
@@ -578,6 +579,13 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
         }
     }
 
+    this->end_ = ::times(&this->end_time_);
+
+    std::cerr << "clock time : " << static_cast<double>(this->end_ - this->start_)/this->clc << std::endl;
+    std::cerr << "user cpu time : " << static_cast<double>(this->end_time_.tms_utime - this->start_time_.tms_utime) / this->clc << std::endl;
+    std::cerr << "system cpu time : " << static_cast<double>(this->end_time_.tms_stime - this->start_time_.tms_stime) / this->clc << std::endl;
+
+
     out << std::endl << std::endl << std::endl;
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
         out << this->recall_.at(t0) << std::endl;
@@ -588,8 +596,6 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
         out << this->fscore_.at(t0) << std::endl;
 
-    this->end_time = std::time(NULL);
-    std::cerr << "It costs " << this->end_time - this->start_time << " seconds" << std::endl;
 
     return ;
     
@@ -834,6 +840,11 @@ void apollo_user_bookmark_tag::apollo_recommender_ucf_b(const std::string &file)
 
     }
     
+    this->end_ = ::times(&this->end_time_);
+
+    std::cerr << "clock time : " << static_cast<double>(this->end_ - this->start_)/this->clc << std::endl;
+    std::cerr << "user cpu time : " << static_cast<double>(this->end_time_.tms_utime - this->start_time_.tms_utime) / this->clc << std::endl;
+    std::cerr << "system cpu time : " << static_cast<double>(this->end_time_.tms_stime - this->start_time_.tms_stime) / this->clc << std::endl;
 
     out << std::endl << std::endl << std::endl;
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
