@@ -464,6 +464,7 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
             }else{
                 double similar_tmp = 0.0;
                 int user = this->user_seq_.at(iu);
+                /*
                 for(std::set<int>::iterator iter_b = this->user_bookmark_.at(user).begin() , \
                                             iter_b_end = this->user_bookmark_.at(user).end() ; \
                                             iter_b != iter_b_end ; \
@@ -475,6 +476,8 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
                     }
                 }
                 similar.at(iu).at(iiu) = similar_tmp / (std::sqrt(norm_b.at(iu)) * std::sqrt(norm_b.at(iiu)));
+                */
+                
                 similar_tmp = 0.0;
                 for(std::set<int>::iterator iter_t = this->user_tag_.at(user).begin() , \
                                             iter_t_end = this->user_tag_.at(user).end() ; \
@@ -486,13 +489,36 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
                         similar_tmp += 1.0;
                     } 
                 }
-                similar.at(iu).at(iiu) = 0.5 * similar.at(iu).at(iiu) + \
+               
+                similar.at(iu).at(iiu) = similar_tmp / (std::sqrt(norm_t.at(iu)) * std::sqrt(norm_t.at(iiu)));
+                //similar.at(iu).at(iiu) = 0.5 * similar.at(iu).at(iiu) + \
                                          0.5 * (similar_tmp / (std::sqrt(norm_t.at(iu)) * std::sqrt(norm_t.at(iiu))));
+                
                 similar.at(iiu).at(iu) = similar.at(iu).at(iiu);
             }
         }
     }
 
+    int sim_cnt[21];
+
+    for(size_t idx = 0 ; idx < 20 ; ++ idx){
+        sim_cnt[idx] = 0;
+    }
+
+    for(size_t iu = 0 ; iu < this->user_cnt_ ; ++ iu){
+        for(size_t iiu = 0 ; iiu < this->user_cnt_ ; ++ iiu){
+            if(iu != iiu){
+                int idx = static_cast<int>(similar.at(iu).at(iiu) * 20);
+                ++ sim_cnt[idx];
+            }
+        }
+    }
+
+    for(size_t idx = 0 ; idx < 20 ; ++ idx){
+        out << sim_cnt[idx] << std::endl;
+    }
+
+/*
     for(size_t iu = 0 ; iu != this->user_cnt_ ; ++ iu){
 
         int user = this->user_seq_.at(iu);
@@ -596,7 +622,7 @@ void apollo_user_bookmark_tag::apollo_tripartite_ucf_b(const std::string &file){
     for(size_t t0 = 0 ; t0 < this->max_recom_list_length ; ++ t0)
         out << this->fscore_.at(t0) << std::endl;
 
-
+*/
     return ;
     
 }

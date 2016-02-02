@@ -4,6 +4,7 @@
 import string
 import os
 import inspect
+import random
 
 class obj:
     def __init__(self):
@@ -148,7 +149,7 @@ class data_wash:
         self.b_file_ = bookmark_file
         self.u_b_t_list_ = []
         self.readme_file_ = readme_file
-        self.degree_filter_param_ = 10
+        self.degree_filter_param_ = 5
 
         self.train_user_set_ = set()
         self.train_bookmark_set_ = set()
@@ -273,6 +274,7 @@ class data_wash:
 
                                 current_user = self.u_b_t_list_[idx][0]
                                 tmp_four_set_len = len(tmp_four_set)
+                                random.shuffle(tmp_four_set)
 
                                 if tmp_four_set_len != 0 :
 
@@ -304,6 +306,7 @@ class data_wash:
 
                         
                         tmp_four_set_len = len(tmp_four_set)
+                        random.shuffle(tmp_four_set)
 
                         if tmp_four_set_len > self.degree_filter_param_:
 
