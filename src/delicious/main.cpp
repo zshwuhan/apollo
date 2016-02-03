@@ -14,11 +14,11 @@ const std::string BOOKMARK_FILE("bookmarks.dat");
 const std::string USER_BOOKMARK_TAG_TRAIN_FILE("user_bookmark_tag_train.dat");
 const std::string USER_BOOKMARK_TAG_TEST_FILE("user_bookmark_tag_test.dat");
 
-const int USER_CLUSTER_CNT = 11;
-const int BOOKMARK_CLUSTER_CNT = 44;
-const int TAG_CLUSTER_CNT = 13;
-const int ITER_TIME = 2;
-const int RECOM_LIST = 20;
+const int USER_CLUSTER_CNT = 12;
+const int BOOKMARK_CLUSTER_CNT = 46;
+const int TAG_CLUSTER_CNT = 14;
+const int ITER_TIME = 3;
+const int RECOM_LIST = 100;
 
 int main(int argc,char *argv[]){
     
@@ -34,9 +34,9 @@ int main(int argc,char *argv[]){
 
     u_b_t_.build_user_bookmark_tag_bigraph();
     u_b_t_.build_bookmark_and_tag_info();
-    //u_b_t_.apollo_bipartite_ucf_b("apollo_bipartite_ucf");
-    u_b_t_.apollo_tripartite_ucf_b("apollo_tripartite_ucf");
-    //u_b_t_.apollo_clustering_();
+    //u_b_t_.apollo_bipartite_ucf_b("apollo_ordinary_bipartite_ucf.txt");
+    //u_b_t_.apollo_tripartite_ucf_b("apollo_ordinary_tripartite_ucf_result.txt");
+    u_b_t_.apollo_clustering_();
     
     return 0;
 
